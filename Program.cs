@@ -3,11 +3,6 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-
-
-
-
-
 namespace HelloWorld;
 
 public enum Shape
@@ -24,30 +19,22 @@ public enum Movement
 public class Block
 { 
     public Shape Shape { get; set; }
-    public Color Color { get; set; }
     public int Size { get; set; }
     public Vector2[] Cells { get; set; }
     public Vector2 Position { get; set; }
-    public Block(Shape shape, int size,int screenWidth)
+    public Block(int size,int gameAreaWidth)
     {
-        Shape = shape;
+        //Shape = shape;
         Size = size;
         Size = 20;
-        
-        Cells = GetShapeCells(Shape, Size);
-         
-            
-        
+        //Cells = GetShapeCells(Shape, Size, gameAreaWidth);
+        GetRandomBlock(gameAreaWidth);
     }
-    public void Move(Vector2 direction)
-    {
-        Position += direction;
-    }
-    public void FallDown(float amount)
+    public void FallDown()
     {
         for (int i = 0; i < Cells.Length; i++)
         {
-            Cells[i].Y += amount;
+            Cells[i].Y += Size;
         }
     }
     public void PlayerControl(Movement move)
@@ -56,21 +43,21 @@ public class Block
         {
             for (int i = 0; i < Cells.Length; i++)
             {
-                Cells[i].X += 10;
+                Cells[i].X += Size;
             }
         }
         if (move == Movement.LEFT)
         {
             for (int i = 0; i < Cells.Length; i++)
             {
-                Cells[i].X -= 10;
+                Cells[i].X -= Size;
             }
         }
         if (move == Movement.DOWN)
         {
             for (int i = 0; i < Cells.Length; i++)
             {
-                Cells[i].Y += 10;
+                Cells[i].Y += Size;
             }
         }
         if (move == Movement.ROTATE)
@@ -79,21 +66,17 @@ public class Block
         }
     }
     private void RotateAroundCenter()
-    {
-        // 计算几何中心
+    {       
         Vector2 center = CalculateCenter();
 
         for (int i = 0; i < Cells.Length; i++)
         {
-            // 计算相对于中心的相对坐标
             float relativeX = Cells[i].X - center.X;
             float relativeY = Cells[i].Y - center.Y;
 
-            // 应用顺时针旋转 90 度的公式 (x', y') = (y, -x)
             float rotatedX = relativeY;
             float rotatedY = -relativeX;
 
-            // 转换回绝对坐标
             Cells[i] = new Vector2(center.X + rotatedX, center.Y + rotatedY);
         }
     }
@@ -102,7 +85,6 @@ public class Block
         float minX = Cells[0].X, maxX = Cells[0].X;
         float minY = Cells[0].Y, maxY = Cells[0].Y;
 
-        // 找到方块的最小和最大坐标
         for (int i = 1; i < Cells.Length; i++)
         {
             if (Cells[i].X < minX) minX = Cells[i].X;
@@ -111,7 +93,6 @@ public class Block
             if (Cells[i].Y > maxY) maxY = Cells[i].Y;
         }
 
-        // 返回几何中心
         return new Vector2((minX + maxX) / 2, (minY + maxY) / 2);
     }
     public void Draw()
@@ -121,7 +102,7 @@ public class Block
             Raylib.DrawRectangleV(Cells[i], new Vector2(Size, Size), GetShapeColor(Shape));
         }        
     }
-    public void GetRandomBlock()
+    public void GetRandomBlock(int gameAreaWidth)
     {
         int random = Raylib.GetRandomValue(0, 6);
         switch (random)
@@ -134,12 +115,11 @@ public class Block
             case 5: { Shape = Shape.J; } break;
             case 6: { Shape = Shape.L; } break;
         }
-        Cells = GetShapeCells(Shape,Size);        
+        Cells = GetShapeCells(Shape,Size, gameAreaWidth);        
     }
-    public static Vector2[] GetShapeCells(Shape shape,int size)
+    public static Vector2[] GetShapeCells(Shape shape,int size,int gameAreaWidth)
     {
-        float screenWidth = (float)Raylib.GetScreenWidth();
-        
+        float screenWidth = (float)gameAreaWidth;        
         float startX = screenWidth / 2 - (2 * size);
         // BLOCK DIFFERENT SHAPE
         switch (shape)
@@ -215,10 +195,13 @@ public class Grid
 class GamePlay
 {
     //WINDOW STATUS
-    const int screenWidth = 640;
-    const int screenHeight = 480;
-
-    
+    const int screenWidth = 800;
+    const int screenHeight = 600;
+    const int gameAreaWidth = 600; 
+    const int gameAreaHeight = 600; 
+    const int uiAreaWidth = 200; 
+    const int uiAreaHeight = 600; 
+                                  
     //OOP
     private static Block currentBlock;
     private static Vector2[] currentBlockPosition;
@@ -236,7 +219,7 @@ class GamePlay
     {
         Raylib.InitWindow(screenWidth, screenHeight, "TETRIS");
         //OOP       
-        currentBlock = new Block(Shape.L,15,screenWidth);       
+        currentBlock = new Block(15, gameAreaWidth);       
     }
     public static void Main()
     {        
@@ -244,7 +227,6 @@ class GamePlay
         while (!Raylib.WindowShouldClose())
         {
             Update();
-            PressButton();
             Draw();            
         }        
         Raylib.CloseWindow();
@@ -256,7 +238,7 @@ class GamePlay
         if (currentTime - lastMoveTime >= moveInterval)
         {
             //MOVEDOWN
-            currentBlock.FallDown(10);  
+            currentBlock.FallDown();  
             lastMoveTime = currentTime;
         }
         // PLAYERCONTROL
@@ -300,7 +282,7 @@ class GamePlay
 
         if (Raylib.IsKeyDown(KeyboardKey.Space) && !spacePressed)
         {
-            currentBlock.GetRandomBlock();
+            currentBlock.GetRandomBlock(gameAreaWidth);
             spacePressed = true;
         }
         if (Raylib.IsKeyUp(KeyboardKey.Space))
@@ -308,21 +290,35 @@ class GamePlay
             spacePressed = false;
         }
     }
-    public static void Generate()
-    {
-        currentBlock.Draw();     
-    }
-    static void PressButton()
-    {
-        
-    }
+   
+   
     public static void Draw()
     { 
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Raylib_cs.Color.White);
-        Generate();
+        //DrawGameWindow
+        DrawGameArea();
+        DrawUIArea();
         Raylib.EndDrawing();
-    } 
+    }
+    public static void DrawGameArea()
+    {
+        Raylib.DrawRectangle(0, 0, gameAreaWidth, gameAreaHeight, Color.Gray);
+        currentBlock.Draw();
+    }
+
+    public static void DrawUIArea()
+    {
+        // 绘制 UI 区域背景
+        Raylib.DrawRectangle(gameAreaWidth, 0, uiAreaWidth, uiAreaHeight, Color.DarkGray);
+
+        // 显示分数等内容
+        //Raylib.DrawText("Score: " + score, gameAreaWidth + 20, 20, 20, Color.White);
+        Raylib.DrawText("Level: 1", gameAreaWidth + 20, 60, 20, Color.White);
+        Raylib.DrawText("Next:", gameAreaWidth + 20, 100, 20, Color.White);
+
+        // 你可以在这里绘制下一个方块的提示
+    }
 }
 
 
