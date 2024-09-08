@@ -3,6 +3,9 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.ComponentModel.Design;
+
+
 namespace HelloWorld;
 
 public enum Shape
@@ -19,50 +22,88 @@ public enum Movement
 public class Block
 { 
     public Shape Shape { get; set; }
+    public static Color Color { get; set; }
     public int Size { get; set; }
     public Vector2[] Cells { get; set; }
-    public Vector2 Position { get; set; }
     public Block(int size,int gameAreaWidth)
     {
-        //Shape = shape;
         Size = size;
-        Size = 20;
-        //Cells = GetShapeCells(Shape, Size, gameAreaWidth);
+        //Color = Color;
+        //Color=Color.Brown;
         GetRandomBlock(gameAreaWidth);
     }
-    public void FallDown()
+    public void PlayerControl(Movement move, int gameAreaWidth, int gameAreaHeight)
     {
-        for (int i = 0; i < Cells.Length; i++)
-        {
-            Cells[i].Y += Size;
-        }
-    }
-    public void PlayerControl(Movement move)
-    {
+        bool canMove = true;
         if (move == Movement.RIGHT)
         {
             for (int i = 0; i < Cells.Length; i++)
             {
-                Cells[i].X += Size;
+                if (Cells[i].X + Size >= gameAreaWidth) // Check right boundary
+                {
+                    canMove = false;
+                    break;
+                }
+            }
+            if (canMove)
+            {
+                for (int i = 0; i < Cells.Length; i++)
+                {
+                    Cells[i].X += Size;
+                }
             }
         }
         if (move == Movement.LEFT)
         {
             for (int i = 0; i < Cells.Length; i++)
             {
-                Cells[i].X -= Size;
+                if (Cells[i].X <= 0) // // Check left boundary
+                {
+                    canMove = false;
+                    break;
+                }
+            }
+            if (canMove)
+            {
+                for (int i = 0; i < Cells.Length; i++)
+                {
+                    Cells[i].X -= Size;
+                }
             }
         }
         if (move == Movement.DOWN)
         {
             for (int i = 0; i < Cells.Length; i++)
             {
-                Cells[i].Y += Size;
+                if (Cells[i].Y + Size >= gameAreaHeight) // // Check bottom boundary
+                {
+                    canMove = false;
+                    break;
+                }
+            }
+            if (canMove)
+            {
+                for (int i = 0; i < Cells.Length; i++)
+                {
+                    Cells[i].Y += Size;
+                }
             }
         }
         if (move == Movement.ROTATE)
         {
-            RotateAroundCenter();
+            for (int i = 0; i < Cells.Length; i++)
+            {
+                if (Cells[i].Y + Size >= gameAreaHeight) 
+                {
+                    canMove = false;
+                    break;
+                }
+            }
+            if (canMove)
+            {
+                RotateAroundCenter();
+            }
+            
         }
     }
     private void RotateAroundCenter()
@@ -98,7 +139,8 @@ public class Block
     public void Draw()
     {       
         for (int i = 0; i < Cells.Length; i++)
-        {        
+        {
+            Color = GetShapeColor(Shape);
             Raylib.DrawRectangleV(Cells[i], new Vector2(Size, Size), GetShapeColor(Shape));
         }        
     }
@@ -114,7 +156,7 @@ public class Block
             case 4: { Shape = Shape.Z; } break;
             case 5: { Shape = Shape.J; } break;
             case 6: { Shape = Shape.L; } break;
-        }
+        }       
         Cells = GetShapeCells(Shape,Size, gameAreaWidth);        
     }
     public static Vector2[] GetShapeCells(Shape shape,int size,int gameAreaWidth)
@@ -160,33 +202,85 @@ public class Block
 
 public class Grid
 {
-    public int Rows { get; private set; }
-    public int Columns { get; private set; }
-    public Color[,] Cells { get; private set; }
-    public Grid(int rows, int columns)
+    private int[,] grid; 
+    private int rows;  
+    private int columns; 
+    private int cellSize;
+
+    public Grid(int rows, int columns, int cellSize)
     {
-        Rows = rows;
-        Columns = columns;
-        Cells = new Color[rows, columns];
-        // 初始化网格为空
-        for (int i = 0; i < Rows; i++)
+        this.rows = rows;
+        this.columns = columns;
+        this.cellSize = cellSize;
+        grid = new int[rows, columns];
+    }
+
+    public bool IsOccupied(int x, int y)
+    {
+        int gridX = x / cellSize;
+        int gridY = y / cellSize;
+
+        if (gridX < 0 || gridX >= columns || gridY >= rows)
+            return true; 
+        return grid[gridY, gridX] == 1;
+    }
+
+    public void AddBlockToGrid(Vector2[] blockCells)
+    {
+        foreach (var cell in blockCells)
         {
-            for (int j = 0; j < Columns; j++)
+            int gridX = (int)(cell.X / cellSize);
+            int gridY = (int)(cell.Y / cellSize);
+
+            if (gridX >= 0 && gridX < columns && gridY >= 0 && gridY < rows)
             {
-                Cells[i, j] = Color.Black; // BLACK 表示空格
+                grid[gridY, gridX] = 1; 
             }
         }
     }
-    public void DrawGrid(Vector2 cellSize)
+    public void ClearFullRows()
     {
-        for (int i = 0; i < Rows; i++)
+        for (int y = 0; y < rows; y++)
         {
-            for (int j = 0; j < Columns; j++)
+            bool isFull = true;
+            for (int x = 0; x < columns; x++)
             {
-                //if (Cells[i, j] != Color.Black) // 如果不是空格，绘制颜色方块
+                if (grid[y, x] == 0)
                 {
-                    Vector2 position = new Vector2(j * cellSize.X, i * cellSize.Y);
-                    Raylib.DrawRectangleV(position, cellSize, Cells[i, j]);
+                    isFull = false;
+                    break;
+                }
+            }
+            if (isFull)
+            {
+                ClearRow(y);
+            }
+        }
+    }
+    private void ClearRow(int row)
+    {
+        for (int y = row; y > 0; y--)
+        {
+            for (int x = 0; x < columns; x++)
+            {
+                grid[y, x] = grid[y - 1, x]; 
+            }
+        }
+        for (int x = 0; x < columns; x++)
+        {
+            grid[0, x] = 0;
+        }
+    }
+
+    public void Draw()
+    {
+        for (int y = 0; y < rows; y++)
+        {
+            for (int x = 0; x < columns; x++)
+            {
+                if (grid[y, x] == 1)
+                {
+                    Raylib.DrawRectangle(x * cellSize, y * cellSize, cellSize, cellSize, Color.Magenta);
                 }
             }
         }
@@ -196,15 +290,17 @@ class GamePlay
 {
     //WINDOW STATUS
     const int screenWidth = 800;
-    const int screenHeight = 600;
+    const int screenHeight = 610;
     const int gameAreaWidth = 600; 
-    const int gameAreaHeight = 600; 
+    const int gameAreaHeight = 610; 
     const int uiAreaWidth = 200; 
     const int uiAreaHeight = 600; 
                                   
     //OOP
     private static Block currentBlock;
-    private static Vector2[] currentBlockPosition;
+    private static Block nextBlock;
+    private static Grid grid;
+
     // TIMER
     private static double lastMoveTime = 0;
     private static double moveInterval = 1.0;
@@ -219,7 +315,9 @@ class GamePlay
     {
         Raylib.InitWindow(screenWidth, screenHeight, "TETRIS");
         //OOP       
-        currentBlock = new Block(15, gameAreaWidth);       
+        currentBlock = new Block(20, gameAreaWidth);
+        nextBlock = new Block(20, gameAreaWidth);
+        grid = new Grid(30, 30, 20);         
     }
     public static void Main()
     {        
@@ -238,13 +336,23 @@ class GamePlay
         if (currentTime - lastMoveTime >= moveInterval)
         {
             //MOVEDOWN
-            currentBlock.FallDown();  
+            //currentBlock.FallDown();
+            if (!HasBlockTouched())
+            {
+                currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);
+            }
+            else
+            {
+                grid.AddBlockToGrid(currentBlock.Cells); 
+                grid.ClearFullRows();
+                currentBlock = new Block(currentBlock.Size, gameAreaWidth); 
+            }
             lastMoveTime = currentTime;
         }
         // PLAYERCONTROL
         if (Raylib.IsKeyDown(KeyboardKey.Left) && !leftPressed)
         {
-            currentBlock.PlayerControl(Movement.LEFT);  // MOVELEFT
+            currentBlock.PlayerControl(Movement.LEFT, gameAreaWidth, gameAreaHeight);  // MOVELEFT
             leftPressed = true;  
         }
         if (Raylib.IsKeyUp(KeyboardKey.Left))
@@ -253,7 +361,7 @@ class GamePlay
         }
         if (Raylib.IsKeyDown(KeyboardKey.Right) && !rightPressed)
         {
-            currentBlock.PlayerControl(Movement.RIGHT);  // MOVERIGHT
+            currentBlock.PlayerControl(Movement.RIGHT, gameAreaWidth, gameAreaHeight);  // MOVERIGHT
             rightPressed = true;  
         }
         if (Raylib.IsKeyUp(KeyboardKey.Right))
@@ -262,7 +370,7 @@ class GamePlay
         }
         if (Raylib.IsKeyDown(KeyboardKey.Down) && !downPressed)
         {
-            currentBlock.PlayerControl(Movement.DOWN);  // MOVEDOWN
+            currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);  // MOVEDOWN
             downPressed = true; 
         }
         if (Raylib.IsKeyUp(KeyboardKey.Down))
@@ -271,7 +379,7 @@ class GamePlay
         }
         if (Raylib.IsKeyDown(KeyboardKey.A) && !rotatePressed)
         {
-            currentBlock.PlayerControl(Movement.ROTATE);  // ROTATE
+            currentBlock.PlayerControl(Movement.ROTATE, gameAreaWidth, gameAreaHeight);  // ROTATE
             rotatePressed = true;
         }
         if (Raylib.IsKeyUp(KeyboardKey.A))
@@ -290,8 +398,23 @@ class GamePlay
             spacePressed = false;
         }
     }
-   
-   
+    private static bool HasBlockTouched()
+    {
+        foreach (var cell in currentBlock.Cells)
+        {
+            int targetPostionY= (int)cell.Y + currentBlock.Size;
+            // touch bottom boundary  //touch other brick
+            if (targetPostionY >= gameAreaHeight)
+            {
+                return true;
+            }
+            if (grid.IsOccupied((int)cell.X, targetPostionY))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     public static void Draw()
     { 
         Raylib.BeginDrawing();
@@ -305,25 +428,18 @@ class GamePlay
     {
         Raylib.DrawRectangle(0, 0, gameAreaWidth, gameAreaHeight, Color.Gray);
         currentBlock.Draw();
+        grid.Draw();
     }
 
     public static void DrawUIArea()
     {
-        // 绘制 UI 区域背景
+
         Raylib.DrawRectangle(gameAreaWidth, 0, uiAreaWidth, uiAreaHeight, Color.DarkGray);
 
-        // 显示分数等内容
         //Raylib.DrawText("Score: " + score, gameAreaWidth + 20, 20, 20, Color.White);
         Raylib.DrawText("Level: 1", gameAreaWidth + 20, 60, 20, Color.White);
         Raylib.DrawText("Next:", gameAreaWidth + 20, 100, 20, Color.White);
 
-        // 你可以在这里绘制下一个方块的提示
+
     }
 }
-
-
-
-
-
-
-
