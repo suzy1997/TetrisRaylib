@@ -19,6 +19,14 @@ public enum Movement
     LEFT,
     ROTATE
 }
+
+public enum StateType
+{ 
+    Stopped = 0,
+    Pausing = 1,
+    Gaming = 2,
+    Lost = 3,
+}
 public class Block
 { 
     public Shape Shape { get; set; }
@@ -117,9 +125,14 @@ public class Block
 
             float rotatedX = relativeY;
             float rotatedY = -relativeX;
-
+            
             Cells[i] = new Vector2(center.X + rotatedX, center.Y + rotatedY);
+            AlignToGrid();
         }
+    }
+    private void WhetherOverBoundary()
+    { 
+    
     }
     private Vector2 CalculateCenter()
     {
@@ -135,6 +148,15 @@ public class Block
         }
 
         return new Vector2((minX + maxX) / 2, (minY + maxY) / 2);
+    }
+     
+    private void AlignToGrid()
+    {
+        for (int i = 0; i < Cells.Length; i++)
+        {
+           
+            Cells[i] = new Vector2((float)Math.Floor(Cells[i].X/Size)*Size, (float)Math.Floor(Cells[i].Y / Size) * Size);
+        }
     }
     public void Draw()
     {       
@@ -167,7 +189,7 @@ public class Block
         switch (shape)
         {
             case Shape.I:
-                return new Vector2[] { new(startX, size),new(startX + size, size),new(startX + 2 * size, size),new(startX + 3 * size, size) };
+                return new Vector2[] { new(startX, 0),new(startX + size, 0),new(startX + 2 * size, 0),new(startX + 3 * size, 0) };
             case Shape.O:
                 return new Vector2[] { new(startX, 0), new(startX + size, 0), new(startX, size), new(startX + size, size) };
             case Shape.T:
@@ -292,7 +314,7 @@ class GamePlay
     const int screenWidth = 800;
     const int screenHeight = 610;
     const int gameAreaWidth = 600; 
-    const int gameAreaHeight = 610; 
+    const int gameAreaHeight = 210; 
     const int uiAreaWidth = 200; 
     const int uiAreaHeight = 600; 
                                   
@@ -310,14 +332,18 @@ class GamePlay
     private static bool downPressed = false;
     private static bool rotatePressed = false;
     private static bool spacePressed = false;
+    //Block Status
+    const int CellSize = 30;
+
+
 
     static void InitGame()
     {
         Raylib.InitWindow(screenWidth, screenHeight, "TETRIS");
         //OOP       
-        currentBlock = new Block(20, gameAreaWidth);
-        nextBlock = new Block(20, gameAreaWidth);
-        grid = new Grid(30, 30, 20);         
+        currentBlock = new Block(CellSize, gameAreaWidth);
+        nextBlock = new Block(CellSize, gameAreaWidth);
+        grid = new Grid(30, 30, CellSize);         
     }
     public static void Main()
     {        
@@ -335,8 +361,7 @@ class GamePlay
         double currentTime = Raylib.GetTime();
         if (currentTime - lastMoveTime >= moveInterval)
         {
-            //MOVEDOWN
-            //currentBlock.FallDown();
+            //MOVEDOWN           
             if (!HasBlockTouched())
             {
                 currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);
@@ -350,7 +375,7 @@ class GamePlay
             lastMoveTime = currentTime;
         }
         // PLAYERCONTROL
-        if (Raylib.IsKeyDown(KeyboardKey.Left) && !leftPressed)
+        if (Raylib.IsKeyDown(KeyboardKey.Left) && !leftPressed && !HasBlockTouchedSide(-1))
         {
             currentBlock.PlayerControl(Movement.LEFT, gameAreaWidth, gameAreaHeight);  // MOVELEFT
             leftPressed = true;  
@@ -359,7 +384,7 @@ class GamePlay
         {
             leftPressed = false;  
         }
-        if (Raylib.IsKeyDown(KeyboardKey.Right) && !rightPressed)
+        if (Raylib.IsKeyDown(KeyboardKey.Right) && !rightPressed && !HasBlockTouchedSide(1))
         {
             currentBlock.PlayerControl(Movement.RIGHT, gameAreaWidth, gameAreaHeight);  // MOVERIGHT
             rightPressed = true;  
@@ -368,7 +393,7 @@ class GamePlay
         {
             rightPressed = false;  
         }
-        if (Raylib.IsKeyDown(KeyboardKey.Down) && !downPressed)
+        if (Raylib.IsKeyDown(KeyboardKey.Down) && !downPressed && !HasBlockTouched())
         {
             currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);  // MOVEDOWN
             downPressed = true; 
@@ -386,17 +411,7 @@ class GamePlay
         {
             rotatePressed = false;       
         }
-        #endregion
-
-        if (Raylib.IsKeyDown(KeyboardKey.Space) && !spacePressed)
-        {
-            currentBlock.GetRandomBlock(gameAreaWidth);
-            spacePressed = true;
-        }
-        if (Raylib.IsKeyUp(KeyboardKey.Space))
-        {
-            spacePressed = false;
-        }
+        #endregion      
     }
     private static bool HasBlockTouched()
     {
@@ -415,11 +430,23 @@ class GamePlay
         }
         return false;
     }
+    private static bool HasBlockTouchedSide(int direction)
+    {
+        foreach (var cell in currentBlock.Cells)
+        {
+            int targetPostionX = (int)cell.X + currentBlock.Size* direction;
+            // touch bottom boundary  //touch other brick
+            if (grid.IsOccupied(targetPostionX, (int)cell.Y))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     public static void Draw()
     { 
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Raylib_cs.Color.White);
-        //DrawGameWindow
         DrawGameArea();
         DrawUIArea();
         Raylib.EndDrawing();
@@ -433,13 +460,9 @@ class GamePlay
 
     public static void DrawUIArea()
     {
-
         Raylib.DrawRectangle(gameAreaWidth, 0, uiAreaWidth, uiAreaHeight, Color.DarkGray);
-
-        //Raylib.DrawText("Score: " + score, gameAreaWidth + 20, 20, 20, Color.White);
+        Raylib.DrawText("Score: " , gameAreaWidth + 20, 20, 20, Color.White);
         Raylib.DrawText("Level: 1", gameAreaWidth + 20, 60, 20, Color.White);
         Raylib.DrawText("Next:", gameAreaWidth + 20, 100, 20, Color.White);
-
-
     }
 }
