@@ -109,14 +109,15 @@ public class Block
             }
             if (canMove)
             {
-                RotateAroundCenter();
+                RotateAroundCenter(gameAreaWidth,gameAreaHeight);
             }
             
         }
     }
-    private void RotateAroundCenter()
+    private void RotateAroundCenter(int gameAreaWidth, int gameAreaHeight)
     {       
         Vector2 center = CalculateCenter();
+        Vector2[] rotatedCells = new Vector2[Cells.Length];
 
         for (int i = 0; i < Cells.Length; i++)
         {
@@ -125,15 +126,17 @@ public class Block
 
             float rotatedX = relativeY;
             float rotatedY = -relativeX;
-            
-            Cells[i] = new Vector2(center.X + rotatedX, center.Y + rotatedY);
-            AlignToGrid();
+
+            float TargtPosX = (float)Math.Floor((center.X + rotatedX) / Size) * Size;
+            float TargtPosY = (float)Math.Floor((center.Y + rotatedY) / Size) * Size;
+            rotatedCells[i] = new Vector2(TargtPosX, TargtPosY);       
         }
-    }
-    private void WhetherOverBoundary()
-    { 
-    
-    }
+        if (!IsCollision(rotatedCells, gameAreaWidth,gameAreaHeight))
+        {
+            Cells = rotatedCells; // 更新方块的位置
+            AlignToGrid(); // 对齐到网格
+        }
+    } 
     private Vector2 CalculateCenter()
     {
         float minX = Cells[0].X, maxX = Cells[0].X;
@@ -148,8 +151,7 @@ public class Block
         }
 
         return new Vector2((minX + maxX) / 2, (minY + maxY) / 2);
-    }
-     
+    }    
     private void AlignToGrid()
     {
         for (int i = 0; i < Cells.Length; i++)
@@ -157,6 +159,18 @@ public class Block
            
             Cells[i] = new Vector2((float)Math.Floor(Cells[i].X/Size)*Size, (float)Math.Floor(Cells[i].Y / Size) * Size);
         }
+    }
+    private bool IsCollision(Vector2[] cells, int gameAreaWidth,int gameAreaHeight)
+    {
+        foreach (var cell in cells)
+        {
+            // 检查是否超出边界
+            if (cell.X < 0 || cell.X >= gameAreaWidth || cell.Y >= gameAreaHeight )
+            {
+                return true;
+            }
+        }
+        return false;
     }
     public void Draw()
     {       
@@ -314,7 +328,7 @@ class GamePlay
     const int screenWidth = 800;
     const int screenHeight = 610;
     const int gameAreaWidth = 600; 
-    const int gameAreaHeight = 210; 
+    const int gameAreaHeight = 610; 
     const int uiAreaWidth = 200; 
     const int uiAreaHeight = 600; 
                                   
