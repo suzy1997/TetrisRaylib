@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "yfgsXBcNEv0=",
+  "dgSpecHash": "rd7tdqjukdI=",
   "success": true,
-  "projectFilePath": "D:\\Raylib\\TetrisRaylib\\Snake_Raylib.csproj",
+  "projectFilePath": "D:\\Raylib\\TetrisRaylib\\TetrisRaylib.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\suzy'\\.nuget\\packages\\raylib-cs\\6.1.1\\raylib-cs.6.1.1.nupkg.sha512",
     "C:\\Users\\suzy'\\.nuget\\packages\\system.numerics.vectors\\4.5.0\\system.numerics.vectors.4.5.0.nupkg.sha512"

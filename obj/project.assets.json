@@ -131,9 +131,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Raylib\\TetrisRaylib\\Snake_Raylib.csproj",
-      "projectName": "Snake_Raylib",
-      "projectPath": "D:\\Raylib\\TetrisRaylib\\Snake_Raylib.csproj",
+      "projectUniqueName": "D:\\Raylib\\TetrisRaylib\\TetrisRaylib.csproj",
+      "projectName": "TetrisRaylib",
+      "projectPath": "D:\\Raylib\\TetrisRaylib\\TetrisRaylib.csproj",
       "packagesPath": "C:\\Users\\suzy'\\.nuget\\packages\\",
       "outputPath": "D:\\Raylib\\TetrisRaylib\\obj\\",
       "projectStyle": "PackageReference",
