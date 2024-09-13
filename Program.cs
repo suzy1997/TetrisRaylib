@@ -18,7 +18,7 @@ public enum Movement
 } 
 public enum StateType
 { 
-    Stopped = 0,
+    Opening = 0,
     Pausing = 1,
     Gaming = 2,
     Lost = 3,
@@ -50,7 +50,7 @@ class GamePlay
     //Block Status
     const int CellSize = 32;
     //game status
-
+    public static StateType StateType { get; set; }
 
     static void InitGame()
     {
@@ -73,63 +73,68 @@ class GamePlay
         Raylib.CloseWindow();
     }
     static void Update()
-    {
+    {       
+        ChangPage();            
         #region BlockMovement
-        double currentTime = Raylib.GetTime();
-        if (currentTime - lastMoveTime >= moveInterval)
-        {
-            //MOVEDOWN           
-            if (!HasBlockTouched())
+            double currentTime = Raylib.GetTime();
+            if (currentTime - lastMoveTime >= moveInterval)
             {
-                currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);
+                //MOVEDOWN           
+                if (!HasBlockTouched())
+                {
+                    currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);
+                }
+                else
+                {
+                    grid.AddBlockToGrid(currentBlock.Cells);
+                    grid.ClearFullRows();
+                    GetNewBlock();
+
+                }
+                lastMoveTime = currentTime;
             }
-            else
+            // PLAYERCONTROL
+            if (Raylib.IsKeyDown(KeyboardKey.Left) && !leftPressed && !HasBlockTouchedSide(-1))
             {
-                grid.AddBlockToGrid(currentBlock.Cells); 
-                grid.ClearFullRows();
-                GetNewBlock();
-                
+                currentBlock.PlayerControl(Movement.LEFT, gameAreaWidth, gameAreaHeight);  // MOVELEFT
+                leftPressed = true;
             }
-            lastMoveTime = currentTime;
-        }
-        // PLAYERCONTROL
-        if (Raylib.IsKeyDown(KeyboardKey.Left) && !leftPressed && !HasBlockTouchedSide(-1))
+            if (Raylib.IsKeyUp(KeyboardKey.Left))
+            {
+                leftPressed = false;
+            }
+            if (Raylib.IsKeyDown(KeyboardKey.Right) && !rightPressed && !HasBlockTouchedSide(1))
+            {
+                currentBlock.PlayerControl(Movement.RIGHT, gameAreaWidth, gameAreaHeight);  // MOVERIGHT
+                rightPressed = true;
+            }
+            if (Raylib.IsKeyUp(KeyboardKey.Right))
+            {
+                rightPressed = false;
+            }
+            if (Raylib.IsKeyDown(KeyboardKey.Down) && !downPressed && !HasBlockTouched())
+            {
+                currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);  // MOVEDOWN
+                downPressed = true;
+            }
+            if (Raylib.IsKeyUp(KeyboardKey.Down))
+            {
+                downPressed = false;
+            }
+            if (Raylib.IsKeyDown(KeyboardKey.A) && !rotatePressed && !HasRotateBlockTouched())
+            {
+                currentBlock.PlayerControl(Movement.ROTATE, gameAreaWidth, gameAreaHeight);  // ROTATE
+                rotatePressed = true;
+            }
+            if (Raylib.IsKeyUp(KeyboardKey.A))
+            {
+                rotatePressed = false;
+            }
+        #endregion
+        if (HasBlockTouchedUpside())
         {
-            currentBlock.PlayerControl(Movement.LEFT, gameAreaWidth, gameAreaHeight);  // MOVELEFT
-            leftPressed = true;  
+            StateType = StateType.Lost;
         }
-        if (Raylib.IsKeyUp(KeyboardKey.Left))
-        {
-            leftPressed = false;  
-        }
-        if (Raylib.IsKeyDown(KeyboardKey.Right) && !rightPressed && !HasBlockTouchedSide(1))
-        {
-            currentBlock.PlayerControl(Movement.RIGHT, gameAreaWidth, gameAreaHeight);  // MOVERIGHT
-            rightPressed = true;  
-        }
-        if (Raylib.IsKeyUp(KeyboardKey.Right))
-        {
-            rightPressed = false;  
-        }
-        if (Raylib.IsKeyDown(KeyboardKey.Down) && !downPressed && !HasBlockTouched())
-        {
-            currentBlock.PlayerControl(Movement.DOWN, gameAreaWidth, gameAreaHeight);  // MOVEDOWN
-            downPressed = true; 
-        }
-        if (Raylib.IsKeyUp(KeyboardKey.Down))
-        {
-            downPressed = false;  
-        }
-        if (Raylib.IsKeyDown(KeyboardKey.A) && !rotatePressed && !HasRotateBlockTouched())
-        {
-            currentBlock.PlayerControl(Movement.ROTATE, gameAreaWidth, gameAreaHeight);  // ROTATE
-            rotatePressed = true;
-        }
-        if (Raylib.IsKeyUp(KeyboardKey.A))
-        {
-            rotatePressed = false;       
-        }
-        #endregion      
     }
     //ui show what is next block
     public static void GetNextBlock()
@@ -145,6 +150,37 @@ class GamePlay
         currentBlock=nextBlock;
         //generate new blcok
         GetNextBlock();       
+    }
+    public static void ChangPage()
+    {
+        if (StateType == StateType.Opening)
+        {
+            if(Raylib.IsKeyDown(KeyboardKey.Enter))
+            {
+                StateType = StateType.Gaming;
+            }            
+        }
+        else if (StateType == StateType.Gaming)
+        {
+            if (Raylib.IsKeyDown(KeyboardKey.Space))
+            {
+                StateType = StateType.Pausing;
+            }                      
+        }
+        else if(StateType == StateType.Pausing)
+        {
+            if (Raylib.IsKeyDown(KeyboardKey.Enter))
+            {
+                StateType = StateType.Gaming; ;
+            }            
+        }
+        else if(StateType == StateType.Lost)
+        {
+            if (Raylib.IsKeyDown(KeyboardKey.Enter))
+            {
+                StateType = StateType.Gaming; ;
+            }
+        }
     }
 
     #region Collision Detection
@@ -195,23 +231,50 @@ class GamePlay
         }
         return false;
     }
+    private static bool HasBlockTouchedUpside()
+    {
+        foreach (var cell in currentBlock.Cells)
+        {        
+            if (grid.IsOccupied((int)cell.X, -1))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     #endregion
 
     public static void Draw()
     { 
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Raylib_cs.Color.White);
-        DrawGameArea();
-        DrawUIArea();
+        if (StateType == StateType.Opening)
+        {
+            Raylib.DrawText("PRESS [ENTER] TO PLAY GAME", Raylib.GetScreenWidth() / 2 - Raylib.MeasureText("PRESS [ENTER] TO PLAY GAME", 20) / 2, Raylib.GetScreenHeight() / 2 - 50, 20, Color.DarkGray);
+        }
+        if (StateType==StateType.Gaming)
+        {                      
+            DrawGameArea();
+            DrawUIArea();            
+        }
+        if (StateType == StateType.Pausing)
+        {
+            Raylib.DrawText("GAME PAUSED", screenWidth / 2 - Raylib.MeasureText("GAME PAUSED", 40) / 2, screenHeight / 2 - 40, 40, Color.Gray);
+        }
+        if (StateType == StateType.Lost)
+        {
+            Raylib.DrawText("GAMEOVER! PRESS [ENTER] TO PLAY AGAIN", Raylib.GetScreenWidth() / 2 - Raylib.MeasureText("GAMEOVER! PRESS [ENTER] TO PLAY AGAIN", 20) / 2, Raylib.GetScreenHeight() / 2 - 50, 20, Color.Gray);        
+        }
+
         Raylib.EndDrawing();
     }
+    #region gaming draw page
     public static void DrawGameArea()
     {
         Raylib.DrawRectangle(0, 0, gameAreaWidth, gameAreaHeight, Color.Gray);
         currentBlock.Draw(0);       
         grid.Draw();
     }
-
     public static void DrawUIArea()
     {
         Raylib.DrawRectangle(gameAreaWidth, 0, uiAreaWidth, uiAreaHeight, Color.DarkGray);
@@ -221,4 +284,5 @@ class GamePlay
         Raylib.DrawText("Next:", gameAreaWidth + 20, 140, 20, Color.White);
         nextBlock.Draw(1);
     }
-}
+    #endregion
+} 

@@ -104,6 +104,7 @@ namespace TetrisRaylib
         public Vector2[] CaculateTarPos()
         {
             Vector2 center = CalculateCenter();
+            //Vector2 center = new Vector2(1.5f,1.5f);
             Vector2[] rotatedCells = new Vector2[Cells.Length];
 
             for (int i = 0; i < Cells.Length; i++)
@@ -173,8 +174,7 @@ namespace TetrisRaylib
                 Color = GetShapeColor(Shape);
                 Raylib.DrawRectangleV(Cells[i] + changpos[i], new Vector2(Size, Size), GetShapeColor(Shape));
             }
-        }
-        
+        }        
         public void GetRandomBlockShape(int gameAreaWidth)
         {
             int random = Raylib.GetRandomValue(0, 6);

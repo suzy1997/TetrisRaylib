@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TetrisRaylib")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f91999656b2007583d6e3b6b0083986d4076b6cd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4b5537b4e5c039b52ce93a2c408b586e5225cde9")]
 [assembly: System.Reflection.AssemblyProductAttribute("TetrisRaylib")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TetrisRaylib")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
